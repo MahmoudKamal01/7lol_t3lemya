@@ -2,7 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const api = axios.create({
-  baseURL: 'http://18.207.139.123/api'});
+  baseURL: 'https://alaayoussef.shop/api'});
 
 // Check if there's a token in the cookies and add it to the headers if it exists
 api.interceptors.request.use(
