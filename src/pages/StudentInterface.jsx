@@ -7,12 +7,17 @@ import {
   Button,
   Input,
   Avatar,
+  Dialog,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  IconButton,
 } from "@material-tailwind/react";
 import {
   EyeIcon,
   ArrowDownTrayIcon,
   MagnifyingGlassIcon,
-  DocumentTextIcon,  // certificate icon
+  DocumentTextIcon,
 } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 import api from "@/configs/api";
@@ -20,11 +25,15 @@ import api from "@/configs/api";
 export default function StudentsInterface() {
   const [studentId, setStudentId] = useState("");
   const [certificates, setCertificates] = useState([]);
-  const [viewMode, setViewMode] = useState("cards"); // "cards" or "table"
+  const [viewMode, setViewMode] = useState("cards");
+  const [openDisclaimer, setOpenDisclaimer] = useState(false);
+  const [selectedAction, setSelectedAction] = useState({ type: "", url: "" });
+  const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async () => {
     const idTrim = studentId.trim();
     if (!idTrim) return;
+     setHasSearched(true);
     try {
       const { data } = await api.get("/certificates/search", {
         params: { studentId: idTrim },
@@ -36,28 +45,27 @@ export default function StudentsInterface() {
     }
   };
 
-   function getDownloadUrl(certificateUrl) {
-  // Insert "fl_attachment" immediately after "/upload"
-  return certificateUrl.replace(
-    "/upload/",
-    "/upload/fl_attachment/" 
-  );
-}
+  function getDownloadUrl(certificateUrl) {
+    return certificateUrl.replace("/upload/", "/upload/fl_attachment/");
+  }
+
+  const handleCertificateAction = (type, url) => {
+    setSelectedAction({ type, url });
+    setOpenDisclaimer(true);
+  };
+
+  const proceedWithAction = () => {
+    window.open(selectedAction.url, "_blank");
+    setOpenDisclaimer(false);
+  };
 
   return (
     <>
       {/* Header with Logo & Title */}
-      <div
-        className="relative h-72 w-full n rounded-xl bg-cover bg-center bg-[url('/img/background-image.png')]"
-      >
+      <div className="relative h-72 w-full n rounded-xl bg-cover bg-center bg-[url('/img/background-image.png')]">
         <div className="absolute inset-0 bg-gray-900/75" />
         <div className="absolute inset-0 mb-32 flex flex-col justify-center items-center text-center p-4">
-          <Avatar
-            src="/img/logo.jpg"
-            alt="Logo"
-            size="xl"
-            variant="circular"
-          />
+          <Avatar src="/img/logo.jpg" alt="Logo" size="xl" variant="circular" />
           <Typography variant="h3" className="mt-4 text-white font-arabic">
             حلول التعليمية
           </Typography>
@@ -65,11 +73,11 @@ export default function StudentsInterface() {
       </div>
 
       {/* Search Interface */}
-      <Card className="mx-4 -mt-20 mb-8 border border-blue-gray-100 shadow  min-h-[600px]">
+      <Card className="mx-4 -mt-20 mb-8 border border-blue-gray-100 shadow min-h-[600px]">
         <CardHeader className="p-6 text-right">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
-              <Avatar src="/img/search.png" size="xl" variant="rounded" />
+              <Avatar src="/img/certificate.png" size="xl" variant="rounded" />
               <div>
                 <Typography variant="h2" className="font-arabic">
                   واجهة الطلاب
@@ -78,15 +86,17 @@ export default function StudentsInterface() {
                   variant="small"
                   className="text-blue-gray-300 font-arabic"
                 >
-                  ابحث عن شهاداتك باستخدام معرف الطالب
+                  ابحث عن شهاداتك باستخدام رقم الطلب
                 </Typography>
               </div>
             </div>
             <div className="flex items-center gap-4 flex-col md:flex-row">
               <Input
-                label="معرف الطالب"
+                label="ادخل رقم الطلب هنا"
                 value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
+                onChange={(e) => {
+                          setStudentId(e.target.value);
+                        }}
                 className="font-arabic"
               />
               <Button
@@ -100,6 +110,10 @@ export default function StudentsInterface() {
             </div>
           </div>
         </CardHeader>
+
+        {/* <Typography className="font-arabic text-center text-red-500 mt-8 text-lg font-bold">
+          الاحتفاظ بالشهادة مسئولية المتدرب ولا يوجد لدينا ارشيف.
+        </Typography> */}
 
         <CardBody className="p-6">
           {/* View-mode toggle */}
@@ -133,10 +147,10 @@ export default function StudentsInterface() {
           {/* Prompt / No results */}
           {!studentId.trim() && (
             <Typography className="font-arabic text-center text-gray-500">
-              من فضلك أدخل معرف الطالب للبحث عن الشهادات.
+              من فضلك أدخل رقم الطلب للبحث عن الشهادات.
             </Typography>
           )}
-          {studentId.trim() && certificates.length === 0 && (
+          {hasSearched && studentId.trim() && certificates.length === 0 && (
             <Typography className="font-arabic text-center text-red-500">
               لا توجد شهادات لهذا المعرف
             </Typography>
@@ -145,37 +159,57 @@ export default function StudentsInterface() {
           {/* Cards View */}
           {certificates.length > 0 && viewMode === "cards" && (
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {certificates.map((cert, idx) => (
-                <CardBody
-                  key={cert._id}
-                  className="relative border flex flex-col items-center p-6"
-                >
-                  <Typography className="absolute top-2 left-2 text-xs text-gray-500 font-arabic">
-                    {new Date(cert.createdAt).toLocaleDateString("ar-EG")}
-                  </Typography>
+             {certificates.map((cert, idx) => (
+                <Card key={cert._id} className="hover:shadow-lg transition-shadow">
+                  <CardBody className="flex flex-col items-center p-4">
+                    {/* Top row with date and badge */}
+                    <div className="w-full flex justify-between items-start mb-2">
+                      <Typography variant="small" className="text-gray-500 font-arabic">
+                        {new Date(cert.createdAt).toLocaleDateString("ar-EG")}
+                      </Typography>
+                      <Typography
+                        variant="small"
+                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
+                      >
+                        #{idx + 1}
+                      </Typography>
+                    </div>
 
-                  {/* Certificate Icon & Name */}
-                  <DocumentTextIcon className="h-12 w-12 text-blue-gray-500" />
-                  <Typography variant="h6" className="mt-2 font-arabic">
-                    شهادة {idx + 1}
-                  </Typography>
+                    {/* Certificate Icon */}
+                    <DocumentTextIcon className="h-16 w-16 text-blue-500 my-4" />
+                                <Typography variant="h6" className="mt-2 font-arabic">
+                                  شهادة {idx + 1}
+                                </Typography>
+                    {/* Action Buttons */}
+                    <div className="flex justify-center gap-4 w-full mt-2">
+                      <IconButton
+                        color="blue"
+                        variant="text"
+                        onClick={() =>
+                          handleCertificateAction("view", cert.certificateUrl)
+                        }
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </IconButton>
 
-                  {/* Actions: View & Download */}
-                  <div className="flex justify-center mt-4 gap-4">
-                    <Link to={cert.certificateUrl} target="_blank">
-                      <EyeIcon className="h-6 w-6 text-blue-gray-500 hover:text-blue-700" />
-                    </Link>
-                    <Link
-                      to={getDownloadUrl(cert.certificateUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ArrowDownTrayIcon className="h-6 w-6 text-green-500 hover:text-green-700" />
-                    </Link>
-                  </div>
-                </CardBody>
-                
+                      <IconButton
+                        color="green"
+                        variant="text"
+                        onClick={() =>
+                          handleCertificateAction(
+                            "download",
+                            getDownloadUrl(cert.certificateUrl)
+                          )
+                        }
+                      >
+                        <ArrowDownTrayIcon className="h-5 w-5" />
+                      </IconButton>
+
+                    </div>
+                  </CardBody>
+                </Card>
               ))}
+
             </div>
           )}
 
@@ -190,23 +224,34 @@ export default function StudentsInterface() {
                 </tr>
               </thead>
               <tbody>
-                {certificates.map((cert,idx) => (
+                {certificates.map((cert, idx) => (
                   <tr key={cert._id} className="border-t">
-                  <Typography variant="h6" className="mt-2 font-arabic">
-                    شهادة {idx + 1}
-                  </Typography>
+                    <td className="px-4 py-2 font-arabic">شهادة {idx + 1}</td>
                     <td className="px-4 py-2">
                       {new Date(cert.createdAt).toLocaleDateString("ar-EG")}
                     </td>
-                    <td className="px-4 py-2 flex justify-center space-x-4">
-                  <div className="flex w-full">
-                                          <Link to={cert.certificateUrl} target="_blank">
-                        <EyeIcon className="h-5 w-5 text-blue-gray-500 hover:text-blue-700" />
-                      </Link>
-                      <Link to={cert.certificateUrl} download>
-                        <ArrowDownTrayIcon className="h-5 w-5 text-green-500 hover:text-green-700" />
-                      </Link>
-                  </div>
+                    <td className="px-4 py-2">
+                      <div className="flex justify-center space-x-4">
+                        <IconButton
+                          onClick={() =>
+                            handleCertificateAction("view", cert.certificateUrl)
+                          }
+                          className="h-6 w-6 text-blue-gray-500 hover:text-blue-700 bg-white"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() =>
+                            handleCertificateAction(
+                              "download",
+                              getDownloadUrl(cert.certificateUrl)
+                            )
+                          }
+                          className="h-6 w-6 text-green-500 hover:text-green-700 bg-white"
+                        >
+                          <ArrowDownTrayIcon className="h-5 w-5" />
+                        </IconButton>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -215,12 +260,47 @@ export default function StudentsInterface() {
           )}
         </CardBody>
       </Card>
-                        <footer className="py-2">
+
+      {/* Disclaimer Dialog */}
+      <Dialog open={openDisclaimer} handler={() => setOpenDisclaimer(false)}>
+        <DialogHeader className="font-arabic">تنبيه هام</DialogHeader>
+        <DialogBody divider className="font-arabic text-right">
+          <Typography variant="h5" className="text-red-500 mb-4">
+            الاحتفاظ بالشهادة مسئولية المتدرب
+          </Typography>
+          <Typography variant="paragraph">
+            يرجى العلم أنه لا يوجد لدينا أرشيف للشهادات، وعليك تحميل وحفظ جميع
+            الشهادات الخاصة بك. لن نكون مسؤولين عن أي شهادات مفقودة في حالة عدم
+            قيامك بحفظها.
+          </Typography>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="text"
+            onClick={() => setOpenDisclaimer(false)}
+            className="font-arabic mr-2"
+          >
+            إلغاء
+          </Button>
+          <Button
+            color="blue"
+            onClick={proceedWithAction}
+            className="font-arabic"
+          >
+            {selectedAction.type === "view" ? "مشاهدة الشهادة" : "تحميل الشهادة"}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      <footer className="py-2">
         <div className="text-center">
-        <Typography variant="small" className="font-normal text-inherit text-center font-arabic">
-           حلول التعليمية &copy; 2025
-        </Typography>
-      </div>
+          <Typography
+            variant="small"
+            className="font-normal text-inherit text-center font-arabic"
+          >
+            حلول التعليمية &copy; 2025
+          </Typography>
+        </div>
       </footer>
     </>
   );
