@@ -80,7 +80,7 @@ export default function StudentsInterface() {
               <Avatar src="/img/certificate.png" size="xl" variant="rounded" />
               <div>
                 <Typography variant="h2" className="font-arabic">
-                  واجهة الطلاب
+                  منصة استلام الشهادات
                 </Typography>
                 <Typography
                   variant="small"
