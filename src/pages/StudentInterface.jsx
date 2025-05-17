@@ -66,7 +66,7 @@ export default function StudentsInterface() {
         <div className="absolute inset-0 bg-gray-900/75" />
         <div className="absolute inset-0 mb-32 flex flex-col justify-center items-center text-center p-4">
           <Avatar src="/img/logo.jpg" alt="Logo" size="xl" variant="circular" />
-          <Typography variant="h3" className="mt-4 text-white font-arabic">
+          <Typography variant="h5" className="mt-4 text-white font-arabic">
             حلول التعليمية
           </Typography>
         </div>
