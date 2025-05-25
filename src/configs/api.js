@@ -3,7 +3,9 @@ import Cookies from 'js-cookie';
 
 const api = axios.create({
   // baseURL: 'http://localhost:5000/api'});
-  baseURL: 'https://alaayoussef.shop/api'});
+  // baseURL: 'https://alaayoussef.shop/api'});
+  baseURL: 'https://extrabitfree.com/api'});
+
 
 // Check if there's a token in the cookies and add it to the headers if it exists
 api.interceptors.request.use(
